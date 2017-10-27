@@ -1,2 +1,4 @@
-# iot-ota-server
-Over-the-air IoT device firmware update server using CoAP
+# OTA Firmware Update Files
+
+Place the firmware update files '.fmu' in this directory.
+

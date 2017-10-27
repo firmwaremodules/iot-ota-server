@@ -1,10 +1,10 @@
 //
+// Reference noap-coap library:
 // https://github.com/mcollina/node-coap
 //
 //
 
 var coap = require('coap');
-var url = require('url');
 var fs = require('fs');
 require('log-timestamp');
 
@@ -28,12 +28,10 @@ var server = coap.createServer({ type: 'udp4' });
 // TYPE is a one-byte field enumerating fm.release.Update.ImageType.
 // The files contain the type enumeration name, e.g. "APP".
 // 
-// We extract the PID 
-//
 
 console.log("Checking available updates in " + FW_BIN_DIR + " ...");
 var dirlist = fs.readdirSync(FW_BIN_DIR);
-//console.log(dirlist);
+
 // create a fwInfo structure:
 //   file name, pid, type, major, minor, build
 
@@ -46,7 +44,7 @@ if (dirlist.length > 0) {
         var s = f.split('.');
         if (s.length == 2) {
             if (s[s.length-1] == 'fmu') {
-                // Got a .bin file, now try to parse it
+                // Got a .fmu file, now try to parse it
                 // Separate based on underscore:
                 //   OTA-MSP432-CC3100_APP_3_1_0_0x2131231.bin
                 var sections = s[0].split("_");
@@ -70,8 +68,6 @@ if (dirlist.length > 0) {
                 fwInfoList.push(info);
                 var n = Number(i)+1;
                 console.log("  " + (n) + " : " + f);
-                //console.log(info);
-            
             }
         }
     }
@@ -91,108 +87,102 @@ function typeToInt(str) {
 
 
 server.on('request', function(req, res) {
-  // Req of type IncomingMessage
-  // res of type OutgoingMessage
-  //
-  // req.payload of type Buffer
-  //
-  // IncomingMessage type has these fields:
-  //    - payload (Buffer)
-  //    - options
-  //    - headers
-  //    - code
-  //    - method
-  //    - url
-  //    - rsinfo
-  
-  // OutgoingMessage type has these fields:
-  //   - code
-  //   - statusCode
-  //   - setOption()
-  //   - reset()
-  //
-  //
-  // We use reset() to signal to the client that we don't
-  // have a suitable update.  Otherwise, we send the bytes down.
- 
-  //
+    // Req of type IncomingMessage
+    // res of type OutgoingMessage
+    //
+    // req.payload of type Buffer
+    //
+    // IncomingMessage type has these fields:
+    //    - payload (Buffer)
+    //    - options
+    //    - headers
+    //    - code
+    //    - method
+    //    - url
+    //    - rsinfo
 
-  var client_id = req.rsinfo.family + ':' + req.rsinfo.address + ':' + req.rsinfo.port;
-  console.log("------------------------------------------------");
-  console.log("Client request from: " + client_id);
-  console.log("Client request URL: " + req.url);
+    // OutgoingMessage type has these fields:
+    //   - code
+    //   - statusCode
+    //   - setOption()
+    //   - reset()
+    //
+    //
+    // We use reset() to signal to the client that we don't
+    // have a suitable update.  Otherwise, we send the bytes down.
 
-  console.log("payload: " + req.payload);
-  
-  console.log("options: ");
-  for (var i in req.options) {
-     var opt = req.options[i];
-     console.log(opt.name + " : " + opt.value.toString('hex'));
-  }
 
-  if (req.url == UPDATE_URL) {
-   
-    // Determine the PID, TYPE and VERSION
-    var clientFWInfo = parseGetFWInfo(req.payload)
-    
-    var fw_file = "";
-    var fw_offset = 0;
-    
-    if (clientFWInfo != null) {
-        // match to a suitable candidate image
-        // find all matches, then choose the file with the largest (most recent) version.
+    var client_id = req.rsinfo.family + ':' + req.rsinfo.address + ':' + req.rsinfo.port;
+    console.log("------------------------------------------------");
+    console.log("Client request from: " + client_id);
+    console.log("Client request URL: " + req.url);
+
+    console.log("payload: " + req.payload);
+
+    console.log("options: ");
+    for (var i in req.options) {
+        var opt = req.options[i];
+        console.log(opt.name + " : " + opt.value.toString('hex'));
+    }
+
+    if (req.url == UPDATE_URL) {
+       
+        // Determine the PID, TYPE and VERSION
+        var clientFWInfo = parseGetFWInfo(req.payload)
         
-        // and assign it to the fw_file
-        var candidate_version = 0;
-        for (var i in fwInfoList) {
-            var serverFWInfo = fwInfoList[i];
-            if (clientFWInfo.pid == serverFWInfo.pid &&
-                clientFWInfo.type == serverFWInfo.type &&
-                clientFWInfo.version < serverFWInfo.version &&
-                serverFWInfo.version > candidate_version)  {
-                // got suitable candidate, record the version in case
-                // there's a better one available
-                candidate_version = serverFWInfo.version;
-                
-                fw_file = serverFWInfo.name;
-                fw_offset = clientFWInfo.offset;
-                console.log(" matching " + fw_file);
+        var fw_file = "";
+        var fw_offset = 0;
+        
+        if (clientFWInfo != null) {
+            // match to a suitable candidate image
+            // find all matches, then choose the file with the largest (most recent) version.
+            
+            // and assign it to the fw_file
+            var candidate_version = 0;
+            for (var i in fwInfoList) {
+                var serverFWInfo = fwInfoList[i];
+                if (clientFWInfo.pid == serverFWInfo.pid &&
+                    clientFWInfo.type == serverFWInfo.type &&
+                    clientFWInfo.version < serverFWInfo.version &&
+                    serverFWInfo.version > candidate_version)  {
+                    // got suitable candidate, record the version in case
+                    // there's a better one available
+                    candidate_version = serverFWInfo.version;
+                    
+                    fw_file = serverFWInfo.name;
+                    fw_offset = clientFWInfo.offset;
+                    console.log(" matching " + fw_file);
+                }
+            }        
+        }
+        
+        if (fw_file == "") {
+            // nothing to update to, issue a reset
+            console.log("No update available.");
+            res.reset();
+        
+        } else {
+            // Send update
+            var fw_bin = fs.readFileSync(FW_BIN_DIR+'/'+fw_file);
+            
+            // check size of offset against file size
+            if (fw_offset < fw_bin.length) {
+            
+                console.log("Sending firmware binary ["+fw_file+"] bytes: ["+ fw_offset 
+                                + ", " + fw_bin.length + "]");
+                res.end(fw_bin.slice(fw_offset, fw_bin.length));
+            } else {
+                console.log("Error: firmware offset ["+fw_offset+"] greater than file length [" + fw_bin.length + "]");
             }
         }
-    
-    }
-    
-    if (fw_file == "") {
-        // nothing to update to, issue a reset
-        console.log("No update available.");
-        res.reset();
-    
     } else {
-        // Send update
-        var fw_bin = fs.readFileSync(FW_BIN_DIR+'/'+fw_file);
-        
-        // check size of offset against file size
-        if (fw_offset < fw_bin.length) {
-        
-            console.log("Sending firmware binary ["+fw_file+"] bytes: ["+ fw_offset 
-                            + ", " + fw_bin.length + "]");
-            res.end(fw_bin.slice(fw_offset, fw_bin.length));
-        } else {
-            console.log("Error: firmware offset ["+fw_offset+"] greater than file length [" + fw_bin.length + "]");
-        }
+        console.log("invalid URL");
+        res.reset();
     }
-    
-    return;
-  } else {
-    console.log("invalid URL");
-    res.reset();
-  }
-  
-
 });
 
 server.listen( function() {
-  console.log("OTA server listening on coap://localhost:5683");
+    console.log("OTA server listening on coap://localhost:5683");
 });
 
 
