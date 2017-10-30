@@ -33,3 +33,7 @@ Because CoAP is a RESTful (stateless) protocol, the GET request for each block m
   version: 16842754,
   offset: 0 }
 ```
+
+## A Bit About CoAP
+
+CoAP - Constrained Application Protocol - works over UDP and is a stateless protocol.  The node (e.g. STM32L1) firmware may be using the stock Contiki Erbium CoAP client (er-coap).  The firmware update server in this repository is running a basic node.js script that uses the node-coap package.  The CoAP block transfer mechanism is employed to move the the firmware binary bytes to the client (node).  Because CoAP is stateless, the node issues a CoAP GET request for each block transfer, which is fixed to some amount by the client (currently 256 bytes).  All requests and responses are confirmable, which means that some reliability is added by CoAP to the inherently unreliable fire-and-forget UDP transport.  The confirmable CoAP messages require the receiver to send an acknowledgement response.  If the expected response is not received in a certain time, the request is retried. All of this is automatically handled in the CoAP client (Contiki Erbium) and server (noap-coap) libraries.
