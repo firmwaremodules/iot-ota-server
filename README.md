@@ -1,4 +1,4 @@
-# OTA Firmware Update Server for CoAP
+# Over The Air Firmware Update Server for IoT Systems Using CoAP
 
 Over-the-air IoT device firmware update server using CoAP.
 
@@ -40,7 +40,7 @@ CoAP is "Constrained Applications Protocol".  A binary protocol designed for IoT
 
 CoAP runs over UDP or DTLS generally, and offers basic reliability in the form of confirmable request/response message semantics with exponential backoff. 
 
-A good overview video of CoAP is here: https://www.youtube.com/watch?v=4bSr5x5gKvA. 
+A good overview video of CoAP is [here](https://www.youtube.com/watch?v=4bSr5x5gKvA). 
 
 CoAP features: 
 * 4 byte header for all messages. 
@@ -60,4 +60,10 @@ CoAP bills itself as a stateless protocol.  The server handles GET requests inde
 * The server responds to the intial GET request with a URL of the firmware image that matches the request.  The URL is actually a 4 byte (8 character) hash of the firmware file name, appended to the root URL, e.g. "8a6b9c2f" is provided in the response.  The client then makes a request to this URL : /updates/8a6b9c2f. 
 * The second request includes just the desired offset as the payload (4 bytes) to the URL provided in the first request.  This offset is applied by the server each time it serves up the response containing the firmware binary. 
 * The server must enumerate the possible firmware binary files, generate hashes then cache them in a lookup table. 
+
+***
+
+If you find this useful consider tossing some Satoshi our way to help fund our efforts!
+
+&#579; 
 
