@@ -63,7 +63,7 @@ CoAP bills itself as a stateless protocol.  The server handles GET requests inde
 
 ***
 
-If you find this useful consider tossing some Satoshi our way to help fund our efforts!
+If you find this useful consider tossing some Satoshi our way to help fund our groundbreaking IoT efforts!
 
-&#579; 
+&#579; 1FFpt2zfEKZN1LXh9MUCcm532p7oUztJz8
 
