@@ -62,6 +62,7 @@ CoAP bills itself as a stateless protocol.  The server handles GET requests inde
 * The server must enumerate the possible firmware binary files, generate hashes then cache them in a lookup table. 
 
 ***
+## Support
 
 If you find this useful consider tossing some &#579; Satoshi our way to help fund our groundbreaking IoT efforts!
 
