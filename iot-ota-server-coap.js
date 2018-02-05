@@ -1,5 +1,5 @@
 //
-// Reference noap-coap library:
+// Reference node-coap library:
 // https://github.com/mcollina/node-coap
 //
 //
